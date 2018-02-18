@@ -61,8 +61,12 @@ module CarrierWave
 
         # store/upload file to qcloud
         def store
-          result = QcloudCos.upload(path, file.to_file)
-          # e.g.: {"code"=>0, "message"=>"SUCCESS", "data"=>{"access_url"=>"http://#{bucket}-#{app_id}.file.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "resource_path"=>"/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "source_url"=>"http://#{bucket}-#{app_id}.cos.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "url"=>"http://web.file.myqcloud.com/files/v1/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg"}}
+          if file.size < 20971520 # 20M
+            result = QcloudCos.upload(path, file.to_file)
+            # e.g.: {"code"=>0, "message"=>"SUCCESS", "data"=>{"access_url"=>"http://#{bucket}-#{app_id}.file.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "resource_path"=>"/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "source_url"=>"http://#{bucket}-#{app_id}.cos.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "url"=>"http://web.file.myqcloud.com/files/v1/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg"}}
+          else
+            result = QcloudCos.upload_slice(path, file.to_file)
+          end
 
           if result['message'] == 'SUCCESS'
             self.qcloud_info = result['data']
