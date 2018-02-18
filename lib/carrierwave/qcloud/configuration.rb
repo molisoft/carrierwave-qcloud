@@ -8,6 +8,7 @@ module CarrierWave
         add_config :qcloud_secret_id
         add_config :qcloud_secret_key
         add_config :qcloud_bucket
+        add_config :qcloud_bucket_host
       end
     end
 

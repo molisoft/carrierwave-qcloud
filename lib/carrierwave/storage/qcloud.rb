@@ -1,5 +1,5 @@
 require 'carrierwave'
-require 'qcloud_cos' # use qcloud cos SDK
+require 'tencent_cloud_cos' # use qcloud cos SDK
 
 module CarrierWave
   module Storage
@@ -19,12 +19,12 @@ module CarrierWave
     class Qcloud < Abstract
       # config qcloud sdk by getting configuration from uplander
       def self.configure_qcloud_sdk(uploader)
-        QcloudCos.configure do |config|
+        TencentCloudCos.configure do |config|
           config.app_id     = uploader.qcloud_app_id
           config.secret_id  = uploader.qcloud_secret_id
           config.secret_key = uploader.qcloud_secret_key
-          config.bucket     = uploader.qcloud_bucket
-          config.endpoint   = "http://web.file.myqcloud.com/files/v1/"
+          config.host       = uploader.qcloud_bucket_host
+          config.content_type = uploader.content_type
         end
       end
 
@@ -61,35 +61,25 @@ module CarrierWave
 
         # store/upload file to qcloud
         def store
-          if file.size < 20971520 # 20M
-            result = QcloudCos.upload(path, file.to_file)
-            # e.g.: {"code"=>0, "message"=>"SUCCESS", "data"=>{"access_url"=>"http://#{bucket}-#{app_id}.file.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "resource_path"=>"/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "source_url"=>"http://#{bucket}-#{app_id}.cos.myqcloud.com/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg", "url"=>"http://web.file.myqcloud.com/files/v1/uploads/user/avatar/5/81b97fdf4f5b4353916c0f40878258bc.jpg"}}
-          else
-            result = QcloudCos.upload_slice(path, file.to_file)
-          end
-
-          if result['message'] == 'SUCCESS'
-            self.qcloud_info = result['data']
-          end
+          result = TencentCloudCos.put(file.to_file, path)
+          return result.code == 200
         end
 
         # file access url on qcloud
         def url
-          qcloud_info['access_url']
+          TencentCloudCos.config.host + path
         end
 
         # get file stat on qcloud
         def stat
-          result = QcloudCos.stat(path)
-          if result['message'] == 'SUCCESS'
-            self.qcloud_info = result['data']
-          end
+          # result = TencentCloudCos.stat(path)
+
         end
 
         # delete file on qcloud
         def delete
-          result = QcloudCos.delete(path)
-          result['message'] == 'SUCCESS'
+          result = TencentCloudCos.delete(path)
+          result.code == 204
           # TODO: delete parent dir if it's empty
           # ref: https://github.com/carrierwaveuploader/carrierwave/wiki/How-to%3A-Make-a-fast-lookup-able-storage-directory-structure
         end
